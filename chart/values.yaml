@@ -1,0 +1,83 @@
+credentials:
+  rootPassword: "SuperPass"
+
+annotations: {}
+
+replicas: 1
+
+command: 
+  - "bin/server.sh"
+
+args: |
+  - "-Darcadedb.dumpConfigAtStartup=true"
+  - "-Darcadedb.server.name=${HOSTNAME}"
+  - "-Darcadedb.server.rootPassword=${ARCADEDB_ROOT_PASSWORD}"
+  - "-Darcadedb.server.databaseDirectory=/mnt/data0/databases"
+  - "-Darcadedb.server.defaultDatabases=traymgmt[];telco[];signalmgmt[]"
+  - "-Darcadedb.ha.enabled=true"
+  - "-Darcadedb.ha.replicationIncomingHost=0.0.0.0"
+  - "-Darcadedb.ha.serverList=arcadedb-0.arcadedb.{{ .Release.Namespace }}.svc.cluster.local:2424"
+  - "-Darcadedb.ha.k8s=true"
+  - "-Darcadedb.ha.k8sSuffix=.arcadedb.{{ .Release.Namespace }}.svc.cluster.local"
+  - "-Darcadedb.server.plugins=GremlinServer:com.arcadedb.server.gremlin.GremlinServerPlugin"
+
+service:
+  httpPort: 2480
+  rpcPort: 2424
+  gremlinPort: 8182
+
+resources:
+  requests:
+    memory: 512Mi
+  limits:
+    memory: 1Gi
+
+podSecurityContext:
+  fsGroup: 1000
+
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app
+                operator: In
+                values:
+                  - arcadedb
+          topologyKey: kubernetes.io/hostname
+
+pvc:
+  size: 10Gi
+
+readinessProbe:
+  httpGet:
+    path: /api/v1/ready
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 6
+
+livenessProbe:
+  httpGet:
+    path: /api/v1/ready
+    port: http
+  initialDelaySeconds: 180
+  periodSeconds: 10
+  timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 6
+
+podManagementPolicy: "OrderedReady"
+
+image:
+  registry: docker.io
+  repository: arcadedata/arcadedb
+  tag: "24.10.1"
+  pullPolicy: IfNotPresent
+
+updateStrategy:
+  type: RollingUpdate
