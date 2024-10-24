@@ -1,0 +1,61 @@
+env:
+    GH_TOKEN: ${{ github.token }}
+
+name: Create ArcadeDB Helm Chart
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: write-all
+
+jobs:
+  pipeline:
+    name: Create Helm Chart
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: "azure/setup-helm@v4"
+
+      - name: Set up environment and variables
+        run: |
+          HELM_VERSION=$(grep -E "version:" chart/Chart.yaml | cut -d':' -f2 | tr -d [:space:])
+          HELM_NAME=$(grep -E "name:" chart/Chart.yaml | cut -d':' -f2 | tr -d [:space:])
+
+          echo "HELM_VERSION=$HELM_VERSION" >> $GITHUB_ENV
+          echo "HELM_NAME=$HELM_NAME" >> $GITHUB_ENV
+
+      - name: Check if version of helm chart is exist in GH
+        run: |
+          gh api -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" "/orgs/fntsoftware/packages/container/helm%2F${{ env.HELM_NAME }}/versions" > $HOME/versionIds.json
+          if [[ $(jq -r '.[].metadata.container.tags[] | select (.  == "'"${{ env.HELM_VERSION }}"'")' $HOME/versionIds.json) != "" ]]; then
+            echo "Vesion ${{ env.HELM_VERSION }} is already exist on GitHub !"
+            exit 1
+          else
+            exit 0
+          fi
+
+      - name: Package Helm Chart
+        if: contains(fromJSON('["refs/heads/main"]'), github.ref)
+        run: |
+          helm package chart/
+
+      - name: Publish Helm to GitHub Packages
+        if: contains(fromJSON('["refs/heads/main"]'), github.ref)
+        run: |
+          #Login to OCI Repository
+          export CR_PAT=${{secrets.GITHUB_TOKEN}}
+          echo $CR_PAT | docker login ghcr.io/fntsoftware/helm -u ${{github.actor}} --password-stdin
+          # publish helm chart
+          helm push ./${{env.HELM_NAME}}-${{env.HELM_VERSION}}.tgz oci://ghcr.io/fntsoftware/helm
