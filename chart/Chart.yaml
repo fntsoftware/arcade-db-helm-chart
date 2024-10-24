@@ -1,0 +1,13 @@
+apiVersion: v2
+name: arcadedb
+version: 0.1.1
+appVersion: 24.11.1
+description: ArcadeDB Helm Chart
+keywords:
+  - arcadedb
+  - docker
+  - database
+sources:
+  - https://github.com/fntsoftware/arcade-db-helm-chart
+engine: gotpl
+icon: https://arcadedb.com/assets/images/arcadedb-logo-mini.png
