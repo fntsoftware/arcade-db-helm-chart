@@ -1,6 +1,6 @@
 apiVersion: v2
 name: arcadedb
-version: 0.1.1
+version: 0.1.2
 appVersion: 24.11.1
 description: ArcadeDB Helm Chart
 keywords:
