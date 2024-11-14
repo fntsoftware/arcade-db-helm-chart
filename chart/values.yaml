@@ -19,7 +19,7 @@ replicas: 1
 image:
   registry: docker.io
   repository: arcadedata/arcadedb
-  tag: "24.10.1"
+  tag: "24.11.1"
   pullPolicy: IfNotPresent
 
 # Server's parameters
