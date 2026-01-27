@@ -1,3 +1,8 @@
+{{- define "arcadedb.image" -}}
+{{- $registry := .Values.global.imageRegistry | default .Values.image.registry -}}
+{{- printf "%s/%s:%s" $registry .Values.image.repository .Values.image.tag -}}
+{{- end -}}
+
 {{- define "arcadedb.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
@@ -54,3 +59,20 @@ Selector labels
 app.kubernetes.io/name: {{ include "arcadedb.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
+
+{{- define "arcadedb.imagePullSecrets" -}}
+{{- include "common.images.renderPullSecrets" (dict "images" (list .Values.image) "context" .) -}}
+{{- end }}
+
+{{- define "arcadedb.serviceAccountName" -}}
+    {{- if .Values.serviceAccount.create -}}
+        {{ default (include "arcadedb.name" .) .Values.serviceAccount.name }}
+    {{- else -}}
+        {{ default "default" .Values.serviceAccount.name }}
+    {{- end -}}
+{{- end -}}
+
+{{- define "arcadedb.volumePermissionsImage" -}}
+{{- $registry := .Values.global.imageRegistry | default .Values.volumePermissions.image.registry -}}
+{{- printf "%s/%s:%s" $registry .Values.volumePermissions.image.repository .Values.volumePermissions.image.tag -}}
+{{- end -}}
