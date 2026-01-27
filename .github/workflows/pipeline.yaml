@@ -31,7 +31,7 @@ jobs:
       - name: Set up environment and variables
         run: |
           HELM_VERSION=$(grep -E "version:" chart/Chart.yaml | cut -d':' -f2 | tr -d [:space:])
-          HELM_NAME=$(grep -E "name:" chart/Chart.yaml | cut -d':' -f2 | tr -d [:space:])
+          HELM_NAME=$(awk '/^name:/ {print $2; exit}' chart/Chart.yaml)
 
           echo "HELM_VERSION=$HELM_VERSION" >> $GITHUB_ENV
           echo "HELM_NAME=$HELM_NAME" >> $GITHUB_ENV

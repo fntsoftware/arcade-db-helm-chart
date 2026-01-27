@@ -27,12 +27,34 @@ spec:
       labels:
         {{- include "arcadedb.selectorLabels" . | nindent 8 }}
     spec:
-      securityContext:
-        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      serviceAccountName: {{ template "arcadedb.serviceAccountName" . }}
+      {{- include "arcadedb.imagePullSecrets" . | nindent 6 }}
+      {{- if .Values.podSecurityContext.enabled }}
+      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" .Values.podSecurityContext "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if and .Values.persistence.enabled .Values.volumePermissions.enabled }}
+      initContainers:
+        - name: init-arcadedb-data-permissions
+          image: {{ include "arcadedb.volumePermissionsImage" . }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" .Values.volumePermissions.containerSecurityContext "context" $) | nindent 12 }}
+          command: ['sh', '-c', 'chown -R {{ .Values.containerSecurityContext.runAsUser }}:{{ .Values.podSecurityContext.fsGroup }} /data; chmod -R 0755 /data']
+          volumeMounts:
+            - name: datadir
+              mountPath: /data
+              {{- if .Values.persistence.subPath }}
+              subPath: {{ .Values.persistence.subPath }}
+              {{- end }}
+          {{- if .Values.volumePermissions.resources }}
+          resources: {{- toYaml .Values.volumePermissions.resources | nindent 12 }}
+          {{- else if ne .Values.volumePermissions.resourcesPreset "none" }}
+          resources: {{- include "common.resources.preset" (dict "type" .Values.volumePermissions.resourcesPreset) | nindent 12 }}
+          {{- end }}
+      {{- end }}
       containers:
         - name: {{ include "arcadedb.fullname" . }}
-          image: {{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}
+          image: {{ include "arcadedb.image" . }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" .Values.containerSecurityContext "context" $) | nindent 12 }}
           env:
             - name: POD_IP
               valueFrom:
@@ -47,18 +69,18 @@ spec:
           command:
             - "bin/server.sh"
           {{- with .Values.args }}
-          args: 
-          {{- tpl . $  | nindent 12}}
-          {{- end}}
+          args:
+          {{- tpl . $ | nindent 12 }}
+          {{- end }}
           ports:
             - containerPort: 2480
               name: http
             - containerPort: 2424
               name: rpc
-          {{- if .Values.service.gremlinPort }}
+            {{- if .Values.service.gremlinPort }}
             - containerPort: 8182
               name: gremlin
-            {{- end}}
+            {{- end }}
           {{- with .Values.extraPorts }}
           {{- toYaml . | nindent 12 }}
           {{- end }}
@@ -74,22 +96,55 @@ spec:
             - name: datadir
               mountPath: /mnt/data0
           {{- with .Values.extraVolumeMounts }}
-            {{- tpl . $ | nindent 12 }}
+          {{- tpl . $ | nindent 12 }}
           {{- end }}
-        {{- with .Values.extraContainers }}
-        {{- tpl . $ | nindent 8 }}
-        {{- end }}
+
+      {{- with .Values.extraContainers }}
+      {{- tpl . $ | nindent 6 }}
+      {{- end }}
+
       {{- if .Values.affinity }}
       affinity: {{- toYaml .Values.affinity | nindent 8 }}
       {{- end }}
-        {{- with .Values.extraVolumes }}
-        {{- tpl . $ | nindent 8 }}
-        {{- end }}
+
+      {{- with .Values.extraVolumes }}
+      volumes:
+      {{- tpl . $ | nindent 8 }}
+      {{- end }}
+
+      {{- if and .Values.persistence.enabled .Values.persistence.existingClaim }}
+      volumes:
+        - name: datadir
+          persistentVolumeClaim:
+            claimName: {{ tpl .Values.persistence.existingClaim $ }}
+      {{- else if not .Values.persistence.enabled }}
+      volumes:
+        - name: datadir
+          emptyDir: {}
+      {{- end }}
+
+  {{- if and .Values.persistence.enabled (not .Values.persistence.existingClaim) }}
   volumeClaimTemplates:
     - metadata:
         name: datadir
+        {{- with .Values.persistence.annotations }}
+        annotations: {{- toYaml . | nindent 10 }}
+        {{- end }}
+        {{- with .Values.persistence.labels }}
+        labels: {{- toYaml . | nindent 10 }}
+        {{- end }}
       spec:
-        accessModes: ["ReadWriteOnce"]
+        accessModes:
+        {{- range .Values.persistence.accessModes }}
+          - {{ . | quote }}
+        {{- end }}
         resources:
           requests:
-            storage: {{ .Values.pvc.size }}
+            storage: {{ .Values.persistence.size | quote }}
+        {{- if .Values.persistence.selector }}
+        selector: {{- toYaml .Values.persistence.selector | nindent 10 }}
+        {{- end }}
+        {{- if .Values.persistence.storageClass }}
+        storageClassName: {{ .Values.persistence.storageClass | quote }}
+        {{- end }}
+  {{- end }}

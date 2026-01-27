@@ -1,3 +1,6 @@
+global:
+  imageRegistry: ""
+
 credentials:
   # Root password for ArcadeDB server
   rootPassword: "SuperPass"
@@ -40,6 +43,12 @@ service:
   # The Gremlin Service port
   gremlinPort: 8182
 
+serviceAccount:
+  create: true
+  name: ""
+  automountServiceAccountToken: false
+  annotations: {}
+
 # The resources section
 resources:
   requests:
@@ -47,9 +56,27 @@ resources:
   limits:
     memory: 1Gi
 
-# The security context for pod
 podSecurityContext:
-  fsGroup: 1000
+  enabled: true
+  fsGroup: 1001
+  runAsNonRoot: true
+  fsGroupChangePolicy: Always
+  sysctls: []
+  supplementalGroups: []
+
+containerSecurityContext:
+  enabled: true
+  runAsUser: 1001
+  runAsGroup: 1001
+  readOnlyRootFilesystem: false
+  allowPrivilegeEscalation: false
+  seLinuxOptions: {}
+  runAsNonRoot: true
+  privileged: false
+  capabilities:
+    drop: ["ALL"]
+  seccompProfile:
+    type: "RuntimeDefault"
 
 # Pod affinity
 affinity:
@@ -65,9 +92,33 @@ affinity:
                   - arcadedb
           topologyKey: kubernetes.io/hostname
 
-pvc:
-  # The PVC's size
+volumePermissions:
+  enabled: false
+  image:
+    registry: docker.io
+    repository: alpine
+    tag: 3.23.2
+  containerSecurityContext:
+    runAsUser: 0
+    readOnlyRootFilesystem: true
+    seLinuxOptions: {}
+    runAsNonRoot: false
+    seccompProfile:
+      type: RuntimeDefault
+  resources: {}
+  resourcesPreset: "nano"
+
+persistence:
+  enabled: true
+  existingClaim: ""
+  subPath: ""
+  storageClass: ""
+  accessModes:
+    - ReadWriteOnce
   size: 10Gi
+  annotations: {}
+  selector: {}
+  dataSource: {}
 
 # Readiness probe configuration
 readinessProbe:

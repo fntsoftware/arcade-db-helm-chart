@@ -1,6 +1,6 @@
 apiVersion: v2
 name: arcadedb
-version: 0.1.2
+version: 0.1.3
 appVersion: 24.11.1
 description: ArcadeDB Helm Chart
 keywords:
@@ -11,3 +11,7 @@ sources:
   - https://github.com/fntsoftware/arcade-db-helm-chart
 engine: gotpl
 icon: https://arcadedb.com/assets/images/arcadedb-logo-mini.png
+dependencies:
+  - name: common
+    repository: oci://ghcr.io/fntsoftware/cloud-platform/helm
+    version: 2.x.x
