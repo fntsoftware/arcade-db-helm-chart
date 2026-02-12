@@ -30,7 +30,7 @@ jobs:
 
       - name: Set up environment and variables
         run: |
-          HELM_VERSION=$(grep -E "version:" chart/Chart.yaml | cut -d':' -f2 | tr -d [:space:])
+          HELM_VERSION=$(awk -F': ' '/^version:/ {print $2}' chart/Chart.yaml)
           HELM_NAME=$(awk '/^name:/ {print $2; exit}' chart/Chart.yaml)
 
           echo "HELM_VERSION=$HELM_VERSION" >> $GITHUB_ENV
@@ -49,6 +49,7 @@ jobs:
       - name: Package Helm Chart
         if: contains(fromJSON('["refs/heads/main"]'), github.ref)
         run: |
+          helm dependency update chart/
           helm package chart/
 
       - name: Publish Helm to GitHub Packages
