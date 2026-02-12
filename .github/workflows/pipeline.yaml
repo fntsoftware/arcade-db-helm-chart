@@ -46,8 +46,12 @@ jobs:
             exit 0
           fi
 
+      - name: Helm Registry Login
+        run: |
+          export CR_PAT=${{secrets.GITHUB_TOKEN}}
+          echo $CR_PAT | helm registry login ghcr.io --username "${{ github.actor }}" --password-stdin
+
       - name: Package Helm Chart
-        if: contains(fromJSON('["refs/heads/main"]'), github.ref)
         run: |
           helm dependency update chart/
           helm package chart/
