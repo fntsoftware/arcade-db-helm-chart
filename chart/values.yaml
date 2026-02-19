@@ -50,11 +50,8 @@ serviceAccount:
   annotations: {}
 
 # The resources section
-resources:
-  requests:
-    memory: 512Mi
-  limits:
-    memory: 1Gi
+resources: {}
+resourcesPreset: "medium"
 
 podSecurityContext:
   enabled: true
