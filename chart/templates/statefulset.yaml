@@ -90,8 +90,11 @@ spec:
           {{- if .Values.readinessProbe }}
           readinessProbe: {{- toYaml .Values.readinessProbe | nindent 12 }}
           {{- end }}
-          resources:
-            {{- toYaml .Values.resources | nindent 12 }}
+          {{- if .Values.resources }}
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+          {{- else if ne .Values.resourcesPreset "none" }}
+          resources: {{- include "common.fnt.resources.preset" (dict "type" .Values.resourcesPreset "common" .Values.global.common) | nindent 12 }}
+          {{- end }}
           volumeMounts:
             - name: datadir
               mountPath: /mnt/data0
