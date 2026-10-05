@@ -95,6 +95,7 @@ volumePermissions:
     registry: docker.io
     repository: alpine
     tag: 3.23.2
+    pullPolicy: IfNotPresent
   containerSecurityContext:
     runAsUser: 0
     readOnlyRootFilesystem: true
