@@ -36,6 +36,7 @@ spec:
       initContainers:
         - name: init-arcadedb-data-permissions
           image: {{ include "arcadedb.volumePermissionsImage" . }}
+          imagePullPolicy: {{ default "IfNotPresent" .Values.volumePermissions.image.pullPolicy }}
           securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" .Values.volumePermissions.containerSecurityContext "context" $) | nindent 12 }}
           command: ['sh', '-c', 'chown -R {{ .Values.containerSecurityContext.runAsUser }}:{{ .Values.podSecurityContext.fsGroup }} /data; chmod -R 0755 /data']
           volumeMounts:
