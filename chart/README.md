@@ -14,6 +14,20 @@ helm install my-arcadedb oci://ghcr.io/fntsoftware/helm/arcadedb
 ```
 This command will install ArcadeDB using the default values. To customize the installation, refer to the Configuration section.
 
+### Use an Existing Root Password Secret
+
+The Secret must already exist in the release namespace and contain the password under the configured key. For example, use the following values to reference the `admin-password` key in the `arcadedb-credentials` Secret:
+
+```yaml
+credentials:
+	existingSecret: arcadedb-credentials
+	existingSecretKey: admin-password
+```
+
+When `credentials.existingSecret` is set, the chart does not create a password Secret and ignores `credentials.rootPassword`, which can be omitted. `credentials.existingSecretKey` defaults to `rootPassword`.
+
+If `credentials.existingSecret` is empty, the chart creates its own Secret using the plain-text `credentials.rootPassword` value. Omitting that value from an override file retains the chart default, `SuperPass`; set a secure password for production.
+
 ### Upgrading the Chart
 To upgrade an existing release:
 
@@ -34,6 +48,8 @@ The following table lists the configurable parameters of the ArcadeDB chart and 
 | Key                                                                                                                                | Default-Value              | Description                                                                                   | Possible-Value                                                                                                                          |
 | ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------- | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | `credentials.rootPassword`                                                                                                         | `SuperPass`                | Root password for the ArcadeDB server                                                         | String                                                                                                                                  |
+| `credentials.existingSecret` | `""` | Existing Secret in the release namespace; takes precedence over `credentials.rootPassword` and disables chart-managed password Secret creation | Secret name |
+| `credentials.existingSecretKey` | `rootPassword` | Key containing the root password in `credentials.existingSecret` | Secret data key |
 | `replicas`                                                                                                                         | `1`                        | Number of replicas for high availability                                                      | Number                                                                                                                                  |
 | `image.registry`                                                                                                                   | `docker.io`                | Docker image registry                                                                         | -                                                                                                                                       |
 | `image.repository`                                                                                                                 | `arcadedata/arcadedb`      | Docker image repository                                                                       | -                                                                                                                                       |
