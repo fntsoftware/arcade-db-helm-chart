@@ -64,8 +64,13 @@ spec:
             - name: ARCADEDB_ROOT_PASSWORD
               valueFrom:
                 secretKeyRef:
+                  {{- if .Values.credentials.existingSecret }}
+                  key: {{ .Values.credentials.existingSecretKey | default "rootPassword" | quote }}
+                  name: {{ .Values.credentials.existingSecret | quote }}
+                  {{- else }}
                   key: rootPassword
                   name: {{ include "arcadedb.fullname" . }}
+                  {{- end }}
                   optional: false
           command:
             - "bin/server.sh"

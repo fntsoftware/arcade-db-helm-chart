@@ -3,7 +3,9 @@ global:
 
 credentials:
   # Root password for ArcadeDB server
-  rootPassword: "SuperPass"
+  rootPassword: ""
+  existingSecret: ""
+  existingSecretKey: "rootPassword"
 
 # Additional annotations
 annotations: {}
