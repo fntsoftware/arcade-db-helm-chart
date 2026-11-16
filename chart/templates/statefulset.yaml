@@ -22,10 +22,18 @@ spec:
     metadata:
       annotations:
       {{- range $key, $value := .Values.annotations }}
+      {{- if not (hasKey $.Values.podAnnotations $key) }}
+      {{- printf "%s: %s" $key (tpl $value $ | quote) | nindent 8 }}
+      {{- end }}
+      {{- end }}
+      {{- range $key, $value := .Values.podAnnotations }}
       {{- printf "%s: %s" $key (tpl $value $ | quote) | nindent 8 }}
       {{- end }}
       labels:
         {{- include "arcadedb.selectorLabels" . | nindent 8 }}
+        {{- with omit .Values.podLabels "app.kubernetes.io/name" "app.kubernetes.io/instance" }}
+        {{- include "common.tplvalues.render" (dict "value" . "context" $) | nindent 8 }}
+        {{- end }}
     spec:
       serviceAccountName: {{ template "arcadedb.serviceAccountName" . }}
       {{- include "arcadedb.imagePullSecrets" . | nindent 6 }}
@@ -114,6 +122,17 @@ spec:
 
       {{- if .Values.affinity }}
       affinity: {{- toYaml .Values.affinity | nindent 8 }}
+      {{- else }}
+      affinity:
+        podAffinity: {{- include "common.affinities.pods" (dict "type" .Values.podAffinityPreset "context" .) | nindent 10 }}
+        podAntiAffinity: {{- include "common.affinities.pods" (dict "type" .Values.podAntiAffinityPreset "context" .) | nindent 10 }}
+        nodeAffinity: {{- include "common.affinities.nodes" (dict "type" .Values.nodeAffinityPreset.type "key" .Values.nodeAffinityPreset.key "values" .Values.nodeAffinityPreset.values) | nindent 10 }}
+      {{- end }}
+      {{- if .Values.tolerations }}
+      tolerations: {{- include "common.tplvalues.render" (dict "value" .Values.tolerations "context" .) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.topologySpreadConstraints }}
+      topologySpreadConstraints: {{- include "common.tplvalues.render" (dict "value" .Values.topologySpreadConstraints "context" .) | nindent 8 }}
       {{- end }}
 
       {{- with .Values.extraVolumes }}
