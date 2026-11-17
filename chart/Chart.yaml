@@ -14,4 +14,4 @@ icon: https://arcadedb.com/assets/images/arcadedb-logo-mini.png
 dependencies:
   - name: common
     repository: oci://ghcr.io/fntsoftware/cloud-platform/helm
-    version: 2.x.x
+    version: 2.2.1
